@@ -25,10 +25,27 @@ Base URL (local): `http://localhost:3000/api/v1`
 | POST | `/auth/refresh` | `{ refreshToken }` | `{ accessToken, refreshToken }` |
 | POST | `/auth/logout` | `{ refreshToken }` | `204` |
 | POST | `/auth/logout-all` 🔒 | – | `204` (every device logged out) |
+| POST | `/auth/verify-email` 🔒 | `{ code }` | `{ user, accessToken, refreshToken }`. Save the new tokens. |
+| POST | `/auth/resend-verification` 🔒 | – | `{ emailSent }` |
+| POST | `/auth/forgot-password` | `{ email }` | `{ message }` (same answer whether or not the email exists) |
+| POST | `/auth/reset-password` | `{ email, code, newPassword }` | `{ user, accessToken, refreshToken }`. Other devices are logged out. |
 
 `incomeType` is one of `STUDENT`, `SALARIED`, `FREELANCE`.
 
-## Users 🔒
+### Email verification (OTP)
+
+- `register` emails a **6-digit code** and returns `emailSent` along with the tokens. The user is logged in but **unverified**.
+- Until they verify, `/formulas`, `/budgets` and `/expenses` return `403 EMAIL_NOT_VERIFIED`. `/users/me` still works.
+- App flow: after register (or a login where `user.emailVerified` is `false`), show the code screen, then call `POST /auth/verify-email` and **replace the stored tokens** with the ones it returns.
+- Codes expire after **10 minutes**, allow **5 wrong tries**, and work only once. Asking for a new code kills the old one.
+- `resend-verification` and `forgot-password` have a **60-second cooldown** (`429 OTP_COOLDOWN`, and `details.retryAfter` says how many seconds to wait).
+
+### Forgot password
+
+1. `POST /auth/forgot-password { email }`, then show the code screen
+2. `POST /auth/reset-password { email, code, newPassword }`, which logs the user in. Every other session is ended, and the email counts as verified.
+
+## Users 🔒 (no verified email needed)
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
@@ -37,7 +54,7 @@ Base URL (local): `http://localhost:3000/api/v1`
 | POST | `/users/me/password` | `{ currentPassword, newPassword }` | `{ accessToken, refreshToken }`. Other devices are logged out. |
 | DELETE | `/users/me` | `{ password }` | `204`. Deletes the account and all its data. |
 
-## Formulas 🔒
+## Formulas 🔒 ✉️ (verified email required)
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
@@ -51,7 +68,7 @@ Buckets must add up to exactly `10000`. Users can only edit their own formulas. 
 
 Built-in formula ids: `sys-50-30-20`, `sys-50-25-15-10`, `sys-70-20-10`, `sys-80-20`.
 
-## Budgets 🔒
+## Budgets 🔒 ✉️
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
@@ -79,7 +96,7 @@ A full budget looks like this:
 }
 ```
 
-## Expenses 🔒
+## Expenses 🔒 ✉️
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
@@ -93,7 +110,9 @@ A full budget looks like this:
 ## Limits
 
 - All of `/api/v1`: 300 requests per 15 minutes per IP.
-- Login and register: 10 failed attempts per 15 minutes per IP in production (100 in development). Over the limit, the API returns `429 RATE_LIMITED`.
+- Login, register, verify and reset: 10 failed attempts per 15 minutes per IP in production (100 in development).
+- Sending codes (resend-verification, forgot-password): 5 per 15 minutes per IP in production.
+- Over a limit, the API returns `429 RATE_LIMITED`.
 
 ## Admin
 
@@ -101,4 +120,4 @@ Make a user an admin with `npm run make-admin -- email@example.com`. They then n
 
 ## Common error codes
 
-`VALIDATION_ERROR`, `BAD_JSON`, `UNAUTHORIZED`, `TOKEN_INVALID`, `BAD_CREDENTIALS`, `EMAIL_TAKEN`, `REFRESH_INVALID`, `REFRESH_REUSED`, `REFRESH_EXPIRED`, `FORBIDDEN`, `FORMULA_NOT_FOUND`, `BUDGET_NOT_FOUND`, `EXPENSE_NOT_FOUND`, `BAD_SPLIT`, `BAD_ALLOCATION`, `FORMULA_IN_USE`, `RATE_LIMITED`, `ROUTE_NOT_FOUND`, `INTERNAL_ERROR`
+`VALIDATION_ERROR`, `BAD_JSON`, `UNAUTHORIZED`, `TOKEN_INVALID`, `BAD_CREDENTIALS`, `EMAIL_TAKEN`, `REFRESH_INVALID`, `REFRESH_REUSED`, `REFRESH_EXPIRED`, `FORBIDDEN`, `FORMULA_NOT_FOUND`, `BUDGET_NOT_FOUND`, `EXPENSE_NOT_FOUND`, `BAD_SPLIT`, `BAD_ALLOCATION`, `FORMULA_IN_USE`, `EMAIL_NOT_VERIFIED`, `ALREADY_VERIFIED`, `OTP_INVALID`, `OTP_EXPIRED`, `OTP_TOO_MANY_ATTEMPTS`, `OTP_COOLDOWN`, `RATE_LIMITED`, `ROUTE_NOT_FOUND`, `INTERNAL_ERROR`

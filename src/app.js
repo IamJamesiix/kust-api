@@ -9,7 +9,7 @@ import userRoutes from './modules/users/users.routes.js'
 import formulaRoutes from './modules/formulas/formulas.routes.js'
 import budgetRoutes from './modules/budgets/budgets.routes.js'
 import expenseRoutes from './modules/expenses/expenses.routes.js'
-import { requireAuth } from './middleware/requireAuth.js'
+import { requireAuth, requireVerified } from './middleware/requireAuth.js'
 import { apiLimiter } from './middleware/rateLimit.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 
@@ -38,9 +38,10 @@ const v1 = express.Router()
 v1.use(apiLimiter)
 v1.use('/auth', authRoutes)
 v1.use('/users', requireAuth, userRoutes)
-v1.use('/formulas', requireAuth, formulaRoutes)
-v1.use('/budgets', requireAuth, budgetRoutes)
-v1.use('/expenses', requireAuth, expenseRoutes)
+// The main features need a verified email. /users stays open so the app can show status.
+v1.use('/formulas', requireAuth, requireVerified, formulaRoutes)
+v1.use('/budgets', requireAuth, requireVerified, budgetRoutes)
+v1.use('/expenses', requireAuth, requireVerified, expenseRoutes)
 app.use('/api/v1', v1)
 
 app.use(notFound)

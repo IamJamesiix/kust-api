@@ -1,0 +1,22 @@
+# Render Blueprint: Render reads this file and sets up the service for you.
+# Dashboard -> New -> Blueprint -> pick this repo.
+services:
+  - type: web
+    name: kust-api
+    runtime: node
+    plan: free
+    region: frankfurt # closest Render region to Nigeria
+    buildCommand: npm ci && npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_ACCESS_SECRET
+        generateValue: true # Render makes a strong random secret
+      - key: DATABASE_URL
+        sync: false # you paste it in the dashboard
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false

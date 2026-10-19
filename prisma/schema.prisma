@@ -15,6 +15,11 @@ enum Role {
   ADMIN
 }
 
+enum OtpPurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
 enum IncomeType {
   STUDENT
   SALARIED
@@ -24,6 +29,7 @@ enum IncomeType {
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
+  emailVerified Boolean        @default(false)
   name          String?
   passwordHash  String
   role          Role           @default(USER)
@@ -32,6 +38,7 @@ model User {
   expenses      Expense[]
   formulas      Formula[]
   refreshTokens RefreshToken[]
+  otpCodes      OtpCode[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -46,6 +53,21 @@ model RefreshToken {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+// One-time codes sent by email. Only the hash is stored.
+model OtpCode {
+  id        String     @id @default(uuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   OtpPurpose
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int        @default(0)
+  usedAt    DateTime?
+  createdAt DateTime   @default(now())
+
+  @@index([userId, purpose])
 }
 
 model Formula {

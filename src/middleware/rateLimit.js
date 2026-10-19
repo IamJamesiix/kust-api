@@ -25,3 +25,10 @@ export const authLimiter = rateLimit({
   skipSuccessfulRequests: true,
   ...limited('Too many attempts. Try again in 15 minutes'),
 })
+
+// Sending codes by email: 5 per 15 minutes per IP in production (each one costs an email).
+export const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: isProd ? 5 : 50,
+  ...limited('Too many code requests. Try again in 15 minutes'),
+})

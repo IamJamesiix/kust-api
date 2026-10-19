@@ -2,6 +2,7 @@ import { prisma } from '../../lib/prisma.js'
 import { AppError } from '../../utils/AppError.js'
 import { hashPassword, checkPassword, publicUser } from '../../utils/password.js'
 import { issueTokens, revokeAllTokens, sha256 } from './tokens.js'
+import { sendCode, useCode } from './otp.js'
 
 export async function register({ email, password, name, incomeType }) {
   const existing = await prisma.user.findUnique({ where: { email } })
@@ -11,7 +12,10 @@ export async function register({ email, password, name, incomeType }) {
     data: { email, name, incomeType, passwordHash: await hashPassword(password) },
   })
 
-  return { user: publicUser(user), ...(await issueTokens(user)) }
+  // Send the verification code. If email fails, sign-up still works — they can tap "resend".
+  const emailSent = await sendCode(user, 'VERIFY_EMAIL')
+
+  return { user: publicUser(user), emailSent, ...(await issueTokens(user)) }
 }
 
 export async function login({ email, password }) {
@@ -54,4 +58,59 @@ export async function logout({ refreshToken }) {
 
 export async function logoutAll(userId) {
   await revokeAllTokens(userId)
+}
+
+// ---------------------------------------------------------------- email verification
+
+export async function resendVerification(userId) {
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) throw new AppError(404, 'USER_NOT_FOUND', 'User not found')
+  if (user.emailVerified) throw new AppError(400, 'ALREADY_VERIFIED', 'Your email is already verified')
+
+  const emailSent = await sendCode(user, 'VERIFY_EMAIL')
+  return { emailSent }
+}
+
+// Returns fresh tokens: the old access token still says "not verified".
+export async function verifyEmail(userId, { code }) {
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) throw new AppError(404, 'USER_NOT_FOUND', 'User not found')
+  if (user.emailVerified) throw new AppError(400, 'ALREADY_VERIFIED', 'Your email is already verified')
+
+  await useCode(user.id, 'VERIFY_EMAIL', code)
+  const verified = await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } })
+
+  return { user: publicUser(verified), ...(await issueTokens(verified)) }
+}
+
+// ---------------------------------------------------------------- forgot / reset password
+
+// Always answers the same way, whether the email exists or not, so this can't be
+// used to find out who has an account.
+export async function forgotPassword({ email }) {
+  const user = await prisma.user.findUnique({ where: { email } })
+  if (user) {
+    try {
+      await sendCode(user, 'RESET_PASSWORD')
+    } catch (err) {
+      if (err.code !== 'OTP_COOLDOWN') throw err // cooldown: stay quiet, a code was just sent
+    }
+  }
+  return { message: 'If that email has an account, a reset code is on its way.' }
+}
+
+export async function resetPassword({ email, code, newPassword }) {
+  const user = await prisma.user.findUnique({ where: { email } })
+  if (!user) throw new AppError(400, 'OTP_EXPIRED', 'That code has expired. Ask for a new one.')
+
+  await useCode(user.id, 'RESET_PASSWORD', code)
+
+  // They proved they own the inbox, so the email counts as verified too.
+  const updated = await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: await hashPassword(newPassword), emailVerified: true },
+  })
+  await revokeAllTokens(user.id) // every old session dies
+
+  return { user: publicUser(updated), ...(await issueTokens(updated)) }
 }
