@@ -1,0 +1,96 @@
+// Money is stored in KOBO as BigInt (₦1,500.50 = 150050). Never floats.
+// Percentages are basis points: 5000 = 50%, 1250 = 12.5%.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum IncomeType {
+  STUDENT
+  SALARIED
+  FREELANCE
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  incomeType    IncomeType     @default(SALARIED)
+  budgets       Budget[]
+  formulas      Formula[]
+  refreshTokens RefreshToken[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Formula {
+  id          String          @id @default(uuid())
+  name        String
+  description String?
+  isSystem    Boolean         @default(false)
+  ownerId     String?
+  owner       User?           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  buckets     FormulaBucket[]
+  budgets     Budget[]
+  createdAt   DateTime        @default(now())
+
+  @@index([ownerId])
+}
+
+model FormulaBucket {
+  id        String  @id @default(uuid())
+  formulaId String
+  formula   Formula @relation(fields: [formulaId], references: [id], onDelete: Cascade)
+  label     String
+  percent   Int
+  colorKey  String
+  position  Int
+
+  @@index([formulaId])
+}
+
+model Budget {
+  id             String       @id @default(uuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  formulaId      String
+  formula        Formula      @relation(fields: [formulaId], references: [id])
+  incomeKobo     BigInt
+  periodStart    DateTime     @default(now())
+  idempotencyKey String?
+  allocations    Allocation[]
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+}
+
+model Allocation {
+  id         String @id @default(uuid())
+  budgetId   String
+  budget     Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  label      String
+  colorKey   String
+  percent    Int
+  amountKobo BigInt
+  position   Int
+
+  @@index([budgetId])
+}
