@@ -5,8 +5,7 @@
 set -e
 
 if [ ! -f prisma.config.ts ] || [ ! -d src/modules ]; then
-  echo "Run this from your kust-api project folder (the one with prisma.config.ts 
-and src/)"; exit 1
+  echo "Run this from your kust-api project folder (the one with prisma.config.ts and src/)"; exit 1
 fi
 
 echo "==> Installing new packages"
@@ -60,8 +59,7 @@ model RefreshToken {
   id        String    @id @default(uuid())
   tokenHash String    @unique
   userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: 
-Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   revokedAt DateTime?
   createdAt DateTime  @default(now())
@@ -75,8 +73,7 @@ model Formula {
   description String?
   isSystem    Boolean         @default(false)
   ownerId     String?
-  owner       User?           @relation(fields: [ownerId], references: [id], 
-onDelete: Cascade)
+  owner       User?           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   buckets     FormulaBucket[]
   budgets     Budget[]
   createdAt   DateTime        @default(now())
@@ -87,8 +84,7 @@ onDelete: Cascade)
 model FormulaBucket {
   id        String  @id @default(uuid())
   formulaId String
-  formula   Formula @relation(fields: [formulaId], references: [id], onDelete: 
-Cascade)
+  formula   Formula @relation(fields: [formulaId], references: [id], onDelete: Cascade)
   label     String
   percent   Int
   colorKey  String
@@ -100,8 +96,7 @@ Cascade)
 model Budget {
   id             String       @id @default(uuid())
   userId         String
-  user           User         @relation(fields: [userId], references: [id], 
-onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   formulaId      String
   formula        Formula      @relation(fields: [formulaId], references: [id])
   incomeKobo     BigInt
@@ -118,8 +113,7 @@ onDelete: Cascade)
 model Allocation {
   id         String @id @default(uuid())
   budgetId   String
-  budget     Budget @relation(fields: [budgetId], references: [id], onDelete: 
-Cascade)
+  budget     Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
   label      String
   colorKey   String
   percent    Int
@@ -134,14 +128,11 @@ Cascade)
 model Expense {
   id           String     @id @default(uuid())
   userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: 
-Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   budgetId     String
-  budget       Budget     @relation(fields: [budgetId], references: [id], 
-onDelete: Cascade)
+  budget       Budget     @relation(fields: [budgetId], references: [id], onDelete: Cascade)
   allocationId String
-  allocation   Allocation @relation(fields: [allocationId], references: [id], 
-onDelete: Cascade)
+  allocation   Allocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
   amountKobo   BigInt
   note         String?
   spentAt      DateTime   @default(now())
@@ -179,14 +170,12 @@ app.set('trust proxy', 1)
 
 // Money is BigInt in the database. JSON can't carry BigInt, so every response
 // turns BigInt into a normal number on the way out. (Safe up to ~₦90 trillion.)
-app.set('json replacer', (key, value) => (typeof value === 'bigint' ? 
-Number(value) : value))
+app.set('json replacer', (key, value) => (typeof value === 'bigint' ? Number(value) : value))
 
 app.use(helmet())
 app.use(cors())
 app.use(express.json({ limit: '100kb' }))
-if (env.NODE_ENV !== 'test') app.use(morgan(env.NODE_ENV === 'production' ? 
-'combined' : 'dev'))
+if (env.NODE_ENV !== 'test') app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
 app.get('/health', async (req, res) => {
   await prisma.$queryRaw`SELECT 1`
@@ -217,8 +206,7 @@ import { env } from '../config/env.js'
 
 // Every error leaves the API as: { error: { code, message, details? } }
 export function notFound(req, res) {
-  res.status(404).json({ error: { code: 'ROUTE_NOT_FOUND', message: 
-`${req.method} ${req.path} not found` } })
+  res.status(404).json({ error: { code: 'ROUTE_NOT_FOUND', message: `${req.method} ${req.path} not found` } })
 }
 
 export function errorHandler(err, req, res, next) {
@@ -227,8 +215,7 @@ export function errorHandler(err, req, res, next) {
       error: {
         code: 'VALIDATION_ERROR',
         message: 'Some fields are wrong',
-        details: err.issues.map((i) => ({ field: i.path.join('.'), message: 
-i.message })),
+        details: err.issues.map((i) => ({ field: i.path.join('.'), message: i.message })),
       },
     })
   }
@@ -240,34 +227,29 @@ i.message })),
   }
 
   if (err.type === 'entity.parse.failed') {
-    return res.status(400).json({ error: { code: 'BAD_JSON', message: 'Request 
-body is not valid JSON' } })
+    return res.status(400).json({ error: { code: 'BAD_JSON', message: 'Request body is not valid JSON' } })
   }
 
   // Prisma: unique constraint
   if (err.code === 'P2002') {
-    return res.status(409).json({ error: { code: 'CONFLICT', message: 'That 
-already exists' } })
+    return res.status(409).json({ error: { code: 'CONFLICT', message: 'That already exists' } })
   }
 
   // Prisma: something else still points at this record
   if (err.code === 'P2003') {
-    return res.status(409).json({ error: { code: 'IN_USE', message: 'That is 
-still being used elsewhere' } })
+    return res.status(409).json({ error: { code: 'IN_USE', message: 'That is still being used elsewhere' } })
   }
 
   // Prisma: record to update/delete wasn't found
   if (err.code === 'P2025') {
-    return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Not 
-found' } })
+    return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Not found' } })
   }
 
   console.error(err)
   res.status(500).json({
     error: {
       code: 'INTERNAL_ERROR',
-      message: env.NODE_ENV === 'production' ? 'Something broke on our side' : 
-err.message,
+      message: env.NODE_ENV === 'production' ? 'Something broke on our side' : err.message,
     },
   })
 }
@@ -333,10 +315,8 @@ export const apiLimiter = rateLimit({
   ...limited('Too many requests, slow down a bit'),
 })
 
-// Login/register: 10 FAILED attempts per 15 minutes per IP in production. Stops 
-password guessing.
-// Successful logins don't count, so real users never hit it. (100 in development 
-so you
+// Login/register: 10 FAILED attempts per 15 minutes per IP in production. Stops password guessing.
+// Successful logins don't count, so real users never hit it. (100 in development so you
 // don't lock yourself out while testing.)
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -364,8 +344,7 @@ import jwt from 'jsonwebtoken'
 import { prisma } from '../../lib/prisma.js'
 import { env } from '../../config/env.js'
 
-export const sha256 = (value) => 
-crypto.createHash('sha256').update(value).digest('hex')
+export const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex')
 
 // Access token: short-lived JWT (15m). Carries user id (sub) and role.
 // Refresh token: long random string. We only store its hash, like a password.
@@ -380,8 +359,7 @@ export async function issueTokens(user) {
     data: {
       userId: user.id,
       tokenHash: sha256(refreshToken),
-      expiresAt: new Date(Date.now() + env.REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 
-1000),
+      expiresAt: new Date(Date.now() + env.REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000),
     },
   })
 
@@ -406,12 +384,10 @@ import { issueTokens, revokeAllTokens, sha256 } from './tokens.js'
 
 export async function register({ email, password, name, incomeType }) {
   const existing = await prisma.user.findUnique({ where: { email } })
-  if (existing) throw new AppError(409, 'EMAIL_TAKEN', 'An account with that 
-email already exists')
+  if (existing) throw new AppError(409, 'EMAIL_TAKEN', 'An account with that email already exists')
 
   const user = await prisma.user.create({
-    data: { email, name, incomeType, passwordHash: await hashPassword(password) 
-},
+    data: { email, name, incomeType, passwordHash: await hashPassword(password) },
   })
 
   return { user: publicUser(user), ...(await issueTokens(user)) }
@@ -422,8 +398,7 @@ export async function login({ email, password }) {
   const ok = user && (await checkPassword(password, user.passwordHash))
   // Same message for "no such email" and "wrong password" so attackers can't
   // use login to find out which emails have accounts.
-  if (!ok) throw new AppError(401, 'BAD_CREDENTIALS', 'Email or password is 
-wrong')
+  if (!ok) throw new AppError(401, 'BAD_CREDENTIALS', 'Email or password is wrong')
 
   return { user: publicUser(user), ...(await issueTokens(user)) }
 }
@@ -435,21 +410,17 @@ export async function refresh({ refreshToken }) {
     include: { user: true },
   })
 
-  if (!stored) throw new AppError(401, 'REFRESH_INVALID', 'Refresh token 
-invalid')
+  if (!stored) throw new AppError(401, 'REFRESH_INVALID', 'Refresh token invalid')
 
-  // An already-used token showing up again = probably stolen. Log the user out 
-everywhere.
+  // An already-used token showing up again = probably stolen. Log the user out everywhere.
   if (stored.revokedAt) {
     await revokeAllTokens(stored.userId)
     throw new AppError(401, 'REFRESH_REUSED', 'Session expired, log in again')
   }
 
-  if (stored.expiresAt < new Date()) throw new AppError(401, 'REFRESH_EXPIRED', 
-'Session expired, log in again')
+  if (stored.expiresAt < new Date()) throw new AppError(401, 'REFRESH_EXPIRED', 'Session expired, log in again')
 
-  await prisma.refreshToken.update({ where: { id: stored.id }, data: { revokedAt: 
-new Date() } })
+  await prisma.refreshToken.update({ where: { id: stored.id }, data: { revokedAt: new Date() } })
   return issueTokens(stored.user)
 }
 
@@ -504,8 +475,7 @@ import * as c from './auth.controller.js'
 const router = Router()
 
 const email = z.string().trim().toLowerCase().email('Enter a valid email')
-export const passwordRule = z.string().min(8, 'Password must be at least 8 
-characters').max(72)
+export const passwordRule = z.string().min(8, 'Password must be at least 8 characters').max(72)
 
 const registerSchema = z.object({
   email,
@@ -544,21 +514,18 @@ export async function getMe(userId) {
 }
 
 export async function updateMe(userId, { name, incomeType }) {
-  const user = await prisma.user.update({ where: { id: userId }, data: { name, 
-incomeType } })
+  const user = await prisma.user.update({ where: { id: userId }, data: { name, incomeType } })
   return publicUser(user)
 }
 
-// New password = every device gets logged out, and this device gets fresh 
-tokens.
+// New password = every device gets logged out, and this device gets fresh tokens.
 export async function changePassword(userId, { currentPassword, newPassword }) {
   const user = await getUserOrThrow(userId)
   if (!(await checkPassword(currentPassword, user.passwordHash))) {
     throw new AppError(401, 'BAD_CREDENTIALS', 'Current password is wrong')
   }
 
-  await prisma.user.update({ where: { id: userId }, data: { passwordHash: await 
-hashPassword(newPassword) } })
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash: await hashPassword(newPassword) } })
   await revokeAllTokens(userId)
   return issueTokens(user)
 }
@@ -569,8 +536,7 @@ export async function deleteMe(userId, { password }) {
     throw new AppError(401, 'BAD_CREDENTIALS', 'Password is wrong')
   }
 
-  // Budgets first (they point at formulas), then the user. Everything else 
-cascades.
+  // Budgets first (they point at formulas), then the user. Everything else cascades.
   await prisma.$transaction([
     prisma.budget.deleteMany({ where: { userId } }),
     prisma.user.delete({ where: { id: userId } }),
@@ -642,18 +608,14 @@ const withBuckets = { buckets: { orderBy: { position: 'asc' } } }
 function checkSplit(buckets) {
   const total = buckets.reduce((sum, b) => sum + b.percent, 0)
   if (total !== 10000) {
-    throw new AppError(400, 'BAD_SPLIT', `Buckets must add up to 100% (10000). 
-Yours add up to ${total}.`)
+    throw new AppError(400, 'BAD_SPLIT', `Buckets must add up to 100% (10000). Yours add up to ${total}.`)
   }
 }
 
-// AUTHORISATION (ownership): built-in formulas belong to admins, custom ones to 
-their owner.
+// AUTHORISATION (ownership): built-in formulas belong to admins, custom ones to their owner.
 function assertCanEdit(user, formula) {
-  const allowed = formula.isSystem ? user.role === 'ADMIN' : formula.ownerId === 
-user.id
-  if (!allowed) throw new AppError(403, 'FORBIDDEN', 'You can only change your 
-own formulas')
+  const allowed = formula.isSystem ? user.role === 'ADMIN' : formula.ownerId === user.id
+  if (!allowed) throw new AppError(403, 'FORBIDDEN', 'You can only change your own formulas')
 }
 
 // Built-in formulas + the ones this user made
@@ -679,8 +641,7 @@ export async function getForUser(userId, formulaId) {
 export async function create(user, { name, description, buckets, system }) {
   checkSplit(buckets)
   if (system && user.role !== 'ADMIN') {
-    throw new AppError(403, 'FORBIDDEN', 'Only admins can create built-in 
-formulas')
+    throw new AppError(403, 'FORBIDDEN', 'Only admins can create built-in formulas')
   }
 
   return prisma.formula.create({
@@ -695,8 +656,7 @@ formulas')
   })
 }
 
-// Changing buckets doesn't touch old budgets — their allocations were copied 
-when made.
+// Changing buckets doesn't touch old budgets — their allocations were copied when made.
 export async function update(user, formulaId, { name, description, buckets }) {
   const formula = await getForUser(user.id, formulaId)
   assertCanEdit(user, formula)
@@ -724,8 +684,7 @@ export async function remove(user, formulaId) {
 
   const used = await prisma.budget.count({ where: { formulaId: formula.id } })
   if (used > 0) {
-    throw new AppError(409, 'FORMULA_IN_USE', `This formula is used by ${used} 
-budget(s). Delete those first.`)
+    throw new AppError(409, 'FORMULA_IN_USE', `This formula is used by ${used} budget(s). Delete those first.`)
   }
 
   await prisma.formula.delete({ where: { id: formula.id } })
@@ -741,18 +700,15 @@ export async function list(req, res) {
 }
 
 export async function getOne(req, res) {
-  res.json({ formula: await formulasService.getForUser(req.user.id, 
-req.params.id) })
+  res.json({ formula: await formulasService.getForUser(req.user.id, req.params.id) })
 }
 
 export async function create(req, res) {
-  res.status(201).json({ formula: await formulasService.create(req.user, 
-req.body) })
+  res.status(201).json({ formula: await formulasService.create(req.user, req.body) })
 }
 
 export async function update(req, res) {
-  res.json({ formula: await formulasService.update(req.user, req.params.id, 
-req.body) })
+  res.json({ formula: await formulasService.update(req.user, req.params.id, req.body) })
 }
 
 export async function remove(req, res) {
@@ -807,8 +763,7 @@ KUSTEOF
 echo '   src/modules/formulas/formulas.routes.js'
 
 cat > src/modules/budgets/summary.js <<'KUSTEOF'
-// Pure function: budget + how much was spent per bucket -> numbers the app 
-shows.
+// Pure function: budget + how much was spent per bucket -> numbers the app shows.
 // spentByAllocation: Map<allocationId, BigInt kobo>
 export function summarize(budget, spentByAllocation) {
   let totalSpent = 0n
@@ -823,8 +778,7 @@ export function summarize(budget, spentByAllocation) {
       spentKobo,
       remainingKobo,
       // 42.5 means 42.5% of this bucket is used
-      usedPercent: a.amountKobo > 0n ? Number((spentKobo * 10000n) / 
-a.amountKobo) / 100 : 0,
+      usedPercent: a.amountKobo > 0n ? Number((spentKobo * 10000n) / a.amountKobo) / 100 : 0,
       overspent: remainingKobo < 0n,
     }
   })
@@ -870,8 +824,7 @@ async function withSummary(budget) {
 // AUTHORISATION (ownership): the budget must belong to this user.
 // Someone else's budget looks exactly like a missing one.
 export async function getOwned(userId, budgetId) {
-  const budget = await prisma.budget.findFirst({ where: { id: budgetId, userId }, 
-include })
+  const budget = await prisma.budget.findFirst({ where: { id: budgetId, userId }, include })
   if (!budget) throw new AppError(404, 'BUDGET_NOT_FOUND', 'Budget not found')
   return budget
 }
@@ -886,8 +839,7 @@ export async function preview(userId, { formulaId, incomeKobo }) {
   }
 }
 
-export async function create(userId, { formulaId, incomeKobo, periodStart }, 
-idempotencyKey) {
+export async function create(userId, { formulaId, incomeKobo, periodStart }, idempotencyKey) {
   // Phone retried after a network drop? Hand back the budget we already made.
   if (idempotencyKey) {
     const existing = await prisma.budget.findUnique({
@@ -939,8 +891,7 @@ export async function list(userId, { limit, cursor }) {
   return {
     budgets: items.map((b) => {
       const spentKobo = spent.get(b.id) ?? 0n
-      return { ...b, totals: { incomeKobo: b.incomeKobo, spentKobo, 
-remainingKobo: b.incomeKobo - spentKobo } }
+      return { ...b, totals: { incomeKobo: b.incomeKobo, spentKobo, remainingKobo: b.incomeKobo - spentKobo } }
     }),
     nextCursor: hasMore ? items[items.length - 1].id : null,
   }
@@ -962,8 +913,7 @@ export async function current(userId) {
 
 export async function remove(userId, id) {
   const budget = await getOwned(userId, id)
-  await prisma.budget.delete({ where: { id: budget.id } }) // allocations + 
-expenses cascade
+  await prisma.budget.delete({ where: { id: budget.id } }) // allocations + expenses cascade
 }
 KUSTEOF
 echo '   src/modules/budgets/budgets.service.js'
@@ -983,8 +933,7 @@ export async function preview(req, res) {
 
 export async function create(req, res) {
   const key = req.get('Idempotency-Key') || undefined
-  const { budget, replayed } = await budgetsService.create(req.user.id, req.body, 
-key)
+  const { budget, replayed } = await budgetsService.create(req.user.id, req.body, key)
   res.status(replayed ? 200 : 201).json({ budget })
 }
 
@@ -1030,8 +979,7 @@ const createSchema = splitSchema.extend({
 router.post('/preview', validate(splitSchema), c.preview)
 router.post('/', validate(createSchema), c.create)
 router.get('/', c.list)
-router.get('/current', c.current) // must come before /:id, or "current" is read 
-as an id
+router.get('/current', c.current) // must come before /:id, or "current" is read as an id
 router.get('/:id', c.getOne)
 router.delete('/:id', c.remove)
 
@@ -1049,8 +997,7 @@ import { z } from 'zod'
 const amountKobo = z.number().int().positive().max(Number.MAX_SAFE_INTEGER)
 
 export const createExpenseSchema = z.object({
-  allocationId: z.string().min(1), // which bucket (Needs, Wants...) this came 
-out of
+  allocationId: z.string().min(1), // which bucket (Needs, Wants...) this came out of
   amountKobo,
   note: z.string().trim().max(140).optional(),
   spentAt: z.coerce.date().optional(),
@@ -1078,30 +1025,25 @@ import { prisma } from '../../lib/prisma.js'
 import { AppError } from '../../utils/AppError.js'
 import { getOwned as getBudget } from '../budgets/budgets.service.js'
 
-// The bucket must belong to this budget (you can't log Wants money against 
-someone else's Needs)
+// The bucket must belong to this budget (you can't log Wants money against someone else's Needs)
 function assertBucket(budget, allocationId) {
   if (!budget.allocations.some((a) => a.id === allocationId)) {
-    throw new AppError(400, 'BAD_ALLOCATION', "That bucket isn't part of this 
-budget")
+    throw new AppError(400, 'BAD_ALLOCATION', "That bucket isn't part of this budget")
   }
 }
 
 async function getOwnedExpense(userId, expenseId) {
-  const expense = await prisma.expense.findFirst({ where: { id: expenseId, userId 
-} })
+  const expense = await prisma.expense.findFirst({ where: { id: expenseId, userId } })
   if (!expense) throw new AppError(404, 'EXPENSE_NOT_FOUND', 'Expense not found')
   return expense
 }
 
-export async function create(userId, budgetId, { allocationId, amountKobo, note, 
-spentAt }) {
+export async function create(userId, budgetId, { allocationId, amountKobo, note, spentAt }) {
   const budget = await getBudget(userId, budgetId)
   assertBucket(budget, allocationId)
 
   return prisma.expense.create({
-    data: { userId, budgetId: budget.id, allocationId, amountKobo: 
-BigInt(amountKobo), note, spentAt },
+    data: { userId, budgetId: budget.id, allocationId, amountKobo: BigInt(amountKobo), note, spentAt },
   })
 }
 
@@ -1118,8 +1060,7 @@ export async function list(userId, budgetId, { allocationId, limit, cursor }) {
 
   const hasMore = rows.length > limit
   const items = hasMore ? rows.slice(0, limit) : rows
-  return { expenses: items, nextCursor: hasMore ? items[items.length - 1].id : 
-null }
+  return { expenses: items, nextCursor: hasMore ? items[items.length - 1].id : null }
 }
 
 export async function update(userId, expenseId, data) {
@@ -1134,8 +1075,7 @@ export async function update(userId, expenseId, data) {
     where: { id: expense.id },
     data: {
       ...data,
-      ...(data.amountKobo !== undefined && { amountKobo: BigInt(data.amountKobo) 
-}),
+      ...(data.amountKobo !== undefined && { amountKobo: BigInt(data.amountKobo) }),
     },
   })
 }
@@ -1153,20 +1093,17 @@ import { listExpensesQuery } from './expenses.schemas.js'
 
 // POST /budgets/:id/expenses
 export async function create(req, res) {
-  res.status(201).json({ expense: await expensesService.create(req.user.id, 
-req.params.id, req.body) })
+  res.status(201).json({ expense: await expensesService.create(req.user.id, req.params.id, req.body) })
 }
 
 // GET /budgets/:id/expenses
 export async function list(req, res) {
-  res.json(await expensesService.list(req.user.id, req.params.id, 
-listExpensesQuery.parse(req.query)))
+  res.json(await expensesService.list(req.user.id, req.params.id, listExpensesQuery.parse(req.query)))
 }
 
 // PATCH /expenses/:id
 export async function update(req, res) {
-  res.json({ expense: await expensesService.update(req.user.id, req.params.id, 
-req.body) })
+  res.json({ expense: await expensesService.update(req.user.id, req.params.id, req.body) })
 }
 
 // DELETE /expenses/:id
@@ -1196,8 +1133,7 @@ echo '   src/modules/expenses/expenses.routes.js'
 
 cat > scripts/make-admin.js <<'KUSTEOF'
 // Usage: npm run make-admin -- you@example.com
-// The user must log in again afterwards — the role lives inside the access 
-token.
+// The user must log in again afterwards — the role lives inside the access token.
 import { prisma } from '../src/lib/prisma.js'
 
 const email = process.argv[2]?.toLowerCase()
@@ -1206,10 +1142,8 @@ if (!email) {
   process.exit(1)
 }
 
-const user = await prisma.user.update({ where: { email }, data: { role: 'ADMIN' } 
-}).catch(() => null)
-console.log(user ? `${user.email} is now an ADMIN. Log in again to get a new 
-token.` : `No user with email ${email}`)
+const user = await prisma.user.update({ where: { email }, data: { role: 'ADMIN' } }).catch(() => null)
+console.log(user ? `${user.email} is now an ADMIN. Log in again to get a new token.` : `No user with email ${email}`)
 await prisma.$disconnect()
 KUSTEOF
 echo '   scripts/make-admin.js'
@@ -1229,14 +1163,12 @@ const buckets = [
 
 test('50/30/20 of ₦150,000', () => {
   const parts = splitIncome(15000000n, buckets)
-  assert.deepEqual(parts.map((p) => p.amountKobo), [7500000n, 4500000n, 
-3000000n])
+  assert.deepEqual(parts.map((p) => p.amountKobo), [7500000n, 4500000n, 3000000n])
 })
 
 test('odd amounts never lose a kobo', () => {
   for (const income of [1n, 7n, 99n, 15000001n, 1234567891n]) {
-    const total = splitIncome(income, buckets).reduce((s, p) => s + p.amountKobo, 
-0n)
+    const total = splitIncome(income, buckets).reduce((s, p) => s + p.amountKobo, 0n)
     assert.equal(total, income)
   }
 })
@@ -1268,33 +1200,24 @@ Base URL (local): `http://localhost:3000/api/v1`
 
 ## Conventions
 
-- **Money is in kobo, as whole numbers.** ₦1,500.50 = `150050`. Divide by 100 to 
-display.
+- **Money is in kobo, as whole numbers.** ₦1,500.50 = `150050`. Divide by 100 to display.
 - **Percentages are basis points.** `5000` = 50%, `1250` = 12.5%.
 - **Auth:** send `Authorization: Bearer <accessToken>` on every route marked 🔒.
-- **Access tokens last 15 minutes.** When a request returns `401 TOKEN_INVALID`, 
-call `POST /auth/refresh` with the stored refresh token, save the new pair, and 
-retry the request once.
-- **Refresh tokens last 30 days and rotate.** Every refresh returns a new refresh 
-token and the old one stops working. Always save the new one.
+- **Access tokens last 15 minutes.** When a request returns `401 TOKEN_INVALID`, call `POST /auth/refresh` with the stored refresh token, save the new pair, and retry the request once.
+- **Refresh tokens last 30 days and rotate.** Every refresh returns a new refresh token and the old one stops working. Always save the new one.
 - **Errors always look like this:**
   ```json
-  { "error": { "code": "EMAIL_TAKEN", "message": "An account with that email 
-already exists", "details": [] } }
+  { "error": { "code": "EMAIL_TAKEN", "message": "An account with that email already exists", "details": [] } }
   ```
-  The app should check `code` and show `message`. `details` only appears on 
-`VALIDATION_ERROR` (one entry per bad field).
-- **Lists use cursor pagination:** `?limit=20&cursor=<nextCursor from the last 
-page>`. `nextCursor: null` means there are no more pages.
+  The app should check `code` and show `message`. `details` only appears on `VALIDATION_ERROR` (one entry per bad field).
+- **Lists use cursor pagination:** `?limit=20&cursor=<nextCursor from the last page>`. `nextCursor: null` means there are no more pages.
 
 ## Auth
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/auth/register` | `{ email, password (8+), name?, incomeType? }` | `201 
-{ user, accessToken, refreshToken }` |
-| POST | `/auth/login` | `{ email, password }` | `{ user, accessToken, 
-refreshToken }` |
+| POST | `/auth/register` | `{ email, password (8+), name?, incomeType? }` | `201 { user, accessToken, refreshToken }` |
+| POST | `/auth/login` | `{ email, password }` | `{ user, accessToken, refreshToken }` |
 | POST | `/auth/refresh` | `{ refreshToken }` | `{ accessToken, refreshToken }` |
 | POST | `/auth/logout` | `{ refreshToken }` | `204` |
 | POST | `/auth/logout-all` 🔒 | – | `204` (every device logged out) |
@@ -1307,63 +1230,48 @@ refreshToken }` |
 |---|---|---|---|
 | GET | `/users/me` | – | `{ user }` |
 | PATCH | `/users/me` | `{ name?, incomeType? }` | `{ user }` |
-| POST | `/users/me/password` | `{ currentPassword, newPassword }` | `{ 
-accessToken, refreshToken }`. Other devices are logged out. |
-| DELETE | `/users/me` | `{ password }` | `204`. Deletes the account and all its 
-data. |
+| POST | `/users/me/password` | `{ currentPassword, newPassword }` | `{ accessToken, refreshToken }`. Other devices are logged out. |
+| DELETE | `/users/me` | `{ password }` | `204`. Deletes the account and all its data. |
 
 ## Formulas 🔒
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| GET | `/formulas` | – | `{ formulas }` (built-in ones first, then the user's 
-own) |
+| GET | `/formulas` | – | `{ formulas }` (built-in ones first, then the user's own) |
 | GET | `/formulas/:id` | – | `{ formula }` |
-| POST | `/formulas` | `{ name, description?, buckets: [{ label, percent, 
-colorKey }] }` | `201 { formula }` |
+| POST | `/formulas` | `{ name, description?, buckets: [{ label, percent, colorKey }] }` | `201 { formula }` |
 | PATCH | `/formulas/:id` | `{ name?, description?, buckets? }` | `{ formula }` |
-| DELETE | `/formulas/:id` | – | `204`, or `409 FORMULA_IN_USE` if budgets use it 
-|
+| DELETE | `/formulas/:id` | – | `204`, or `409 FORMULA_IN_USE` if budgets use it |
 
-Buckets must add up to exactly `10000`. Users can only edit their own formulas. 
-Built-in formulas are admin-only: an admin can create one by sending `system: 
-true`.
+Buckets must add up to exactly `10000`. Users can only edit their own formulas. Built-in formulas are admin-only: an admin can create one by sending `system: true`.
 
-Built-in formula ids: `sys-50-30-20`, `sys-50-25-15-10`, `sys-70-20-10`, 
-`sys-80-20`.
+Built-in formula ids: `sys-50-30-20`, `sys-50-25-15-10`, `sys-70-20-10`, `sys-80-20`.
 
 ## Budgets 🔒
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/budgets/preview` | `{ formulaId, incomeKobo }` | `{ preview }` (the 
-split, nothing saved) |
-| POST | `/budgets` | `{ formulaId, incomeKobo, periodStart? }` | `201 { budget 
-}` |
-| GET | `/budgets` | `?limit&cursor` | `{ budgets, nextCursor }`. Each budget has 
-`totals`. |
+| POST | `/budgets/preview` | `{ formulaId, incomeKobo }` | `{ preview }` (the split, nothing saved) |
+| POST | `/budgets` | `{ formulaId, incomeKobo, periodStart? }` | `201 { budget }` |
+| GET | `/budgets` | `?limit&cursor` | `{ budgets, nextCursor }`. Each budget has `totals`. |
 | GET | `/budgets/current` | – | `{ budget }` (most recent budget, or `null`) |
 | GET | `/budgets/:id` | – | `{ budget }` |
 | DELETE | `/budgets/:id` | – | `204` (its expenses are deleted too) |
 
-Send an `Idempotency-Key: <random uuid>` header on `POST /budgets`. If the phone 
-retries after a network drop, it gets the same budget back (`200`) instead of a 
-duplicate.
+Send an `Idempotency-Key: <random uuid>` header on `POST /budgets`. If the phone retries after a network drop, it gets the same budget back (`200`) instead of a duplicate.
 
 A full budget looks like this:
 
 ```json
 {
-  "id": "…", "formulaId": "sys-50-30-20", "incomeKobo": 15000000, "periodStart": 
-"…",
+  "id": "…", "formulaId": "sys-50-30-20", "incomeKobo": 15000000, "periodStart": "…",
   "formula": { "id": "sys-50-30-20", "name": "50/30/20" },
   "allocations": [
     { "id": "…", "label": "Needs", "colorKey": "needs", "percent": 5000,
       "amountKobo": 7500000, "spentKobo": 2500000, "remainingKobo": 5000000,
       "usedPercent": 33.33, "overspent": false, "position": 0 }
   ],
-  "totals": { "incomeKobo": 15000000, "spentKobo": 2500000, "remainingKobo": 
-12500000 }
+  "totals": { "incomeKobo": 15000000, "spentKobo": 2500000, "remainingKobo": 12500000 }
 }
 ```
 
@@ -1371,36 +1279,25 @@ A full budget looks like this:
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/budgets/:id/expenses` | `{ allocationId, amountKobo, note?, spentAt? 
-}` | `201 { expense }` |
-| GET | `/budgets/:id/expenses` | `?allocationId&limit&cursor` | `{ expenses, 
-nextCursor }` (newest first) |
-| PATCH | `/expenses/:id` | `{ allocationId?, amountKobo?, note?, spentAt? }` | 
-`{ expense }` |
+| POST | `/budgets/:id/expenses` | `{ allocationId, amountKobo, note?, spentAt? }` | `201 { expense }` |
+| GET | `/budgets/:id/expenses` | `?allocationId&limit&cursor` | `{ expenses, nextCursor }` (newest first) |
+| PATCH | `/expenses/:id` | `{ allocationId?, amountKobo?, note?, spentAt? }` | `{ expense }` |
 | DELETE | `/expenses/:id` | – | `204` |
 
-`allocationId` is the bucket the money came out of (Needs, Wants…), taken from 
-`budget.allocations[].id`. Overspending is allowed: that bucket then shows 
-`overspent: true` and a negative `remainingKobo`.
+`allocationId` is the bucket the money came out of (Needs, Wants…), taken from `budget.allocations[].id`. Overspending is allowed: that bucket then shows `overspent: true` and a negative `remainingKobo`.
 
 ## Limits
 
 - All of `/api/v1`: 300 requests per 15 minutes per IP.
-- Login and register: 10 failed attempts per 15 minutes per IP in production (100 
-in development). Over the limit, the API returns `429 RATE_LIMITED`.
+- Login and register: 10 failed attempts per 15 minutes per IP in production (100 in development). Over the limit, the API returns `429 RATE_LIMITED`.
 
 ## Admin
 
-Make a user an admin with `npm run make-admin -- email@example.com`. They then 
-need to log in again.
+Make a user an admin with `npm run make-admin -- email@example.com`. They then need to log in again.
 
 ## Common error codes
 
-`VALIDATION_ERROR`, `BAD_JSON`, `UNAUTHORIZED`, `TOKEN_INVALID`, 
-`BAD_CREDENTIALS`, `EMAIL_TAKEN`, `REFRESH_INVALID`, `REFRESH_REUSED`, 
-`REFRESH_EXPIRED`, `FORBIDDEN`, `FORMULA_NOT_FOUND`, `BUDGET_NOT_FOUND`, 
-`EXPENSE_NOT_FOUND`, `BAD_SPLIT`, `BAD_ALLOCATION`, `FORMULA_IN_USE`, 
-`RATE_LIMITED`, `ROUTE_NOT_FOUND`, `INTERNAL_ERROR`
+`VALIDATION_ERROR`, `BAD_JSON`, `UNAUTHORIZED`, `TOKEN_INVALID`, `BAD_CREDENTIALS`, `EMAIL_TAKEN`, `REFRESH_INVALID`, `REFRESH_REUSED`, `REFRESH_EXPIRED`, `FORBIDDEN`, `FORMULA_NOT_FOUND`, `BUDGET_NOT_FOUND`, `EXPENSE_NOT_FOUND`, `BAD_SPLIT`, `BAD_ALLOCATION`, `FORMULA_IN_USE`, `RATE_LIMITED`, `ROUTE_NOT_FOUND`, `INTERNAL_ERROR`
 KUSTEOF
 echo '   API.md'
 

@@ -17,6 +17,7 @@ export async function logout(req, res) {
   res.status(204).end()
 }
 
-export async function me(req, res) {
-  res.json({ user: await authService.me(req.user.id) })
+export async function logoutAll(req, res) {
+  await authService.logoutAll(req.user.id)
+  res.status(204).end()
 }

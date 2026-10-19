@@ -10,6 +10,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 enum IncomeType {
   STUDENT
   SALARIED
@@ -19,9 +24,12 @@ enum IncomeType {
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
+  name          String?
   passwordHash  String
+  role          Role           @default(USER)
   incomeType    IncomeType     @default(SALARIED)
   budgets       Budget[]
+  expenses      Expense[]
   formulas      Formula[]
   refreshTokens RefreshToken[]
   createdAt     DateTime       @default(now())
@@ -76,6 +84,7 @@ model Budget {
   periodStart    DateTime     @default(now())
   idempotencyKey String?
   allocations    Allocation[]
+  expenses       Expense[]
   createdAt      DateTime     @default(now())
 
   @@unique([userId, idempotencyKey])
@@ -91,6 +100,27 @@ model Allocation {
   percent    Int
   amountKobo BigInt
   position   Int
+  expenses   Expense[]
 
   @@index([budgetId])
+}
+
+// Money the user actually spent, logged against one bucket of one budget.
+model Expense {
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  budgetId     String
+  budget       Budget     @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  allocationId String
+  allocation   Allocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
+  amountKobo   BigInt
+  note         String?
+  spentAt      DateTime   @default(now())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([budgetId])
+  @@index([allocationId])
+  @@index([userId, spentAt])
 }

@@ -28,9 +28,19 @@ export function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: { code: 'BAD_JSON', message: 'Request body is not valid JSON' } })
   }
 
-  // Prisma unique constraint
+  // Prisma: unique constraint
   if (err.code === 'P2002') {
     return res.status(409).json({ error: { code: 'CONFLICT', message: 'That already exists' } })
+  }
+
+  // Prisma: something else still points at this record
+  if (err.code === 'P2003') {
+    return res.status(409).json({ error: { code: 'IN_USE', message: 'That is still being used elsewhere' } })
+  }
+
+  // Prisma: record to update/delete wasn't found
+  if (err.code === 'P2025') {
+    return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Not found' } })
   }
 
   console.error(err)

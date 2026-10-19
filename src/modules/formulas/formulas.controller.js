@@ -9,5 +9,14 @@ export async function getOne(req, res) {
 }
 
 export async function create(req, res) {
-  res.status(201).json({ formula: await formulasService.createCustom(req.user.id, req.body) })
+  res.status(201).json({ formula: await formulasService.create(req.user, req.body) })
+}
+
+export async function update(req, res) {
+  res.json({ formula: await formulasService.update(req.user, req.params.id, req.body) })
+}
+
+export async function remove(req, res) {
+  await formulasService.remove(req.user, req.params.id)
+  res.status(204).end()
 }
