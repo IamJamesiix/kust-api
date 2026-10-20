@@ -31,7 +31,10 @@ model User {
   email         String         @unique
   emailVerified Boolean        @default(false)
   name          String?
-  passwordHash  String
+  // Null for people who only ever signed in with Google.
+  passwordHash  String?
+  // Google's permanent id for this person ("sub" in the ID token).
+  googleId      String?        @unique
   role          Role           @default(USER)
   incomeType    IncomeType     @default(SALARIED)
   budgets       Budget[]

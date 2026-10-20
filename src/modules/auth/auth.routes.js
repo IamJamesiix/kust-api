@@ -23,9 +23,12 @@ const tokenSchema = z.object({ refreshToken: z.string().min(1) })
 const verifySchema = z.object({ code })
 const forgotSchema = z.object({ email })
 const resetSchema = z.object({ email, code, newPassword: passwordRule })
+// Google ID tokens are JWTs, normally ~1-2 KB.
+const googleSchema = z.object({ idToken: z.string().min(20).max(4096) })
 
 router.post('/register', authLimiter, validate(registerSchema), c.register)
 router.post('/login', authLimiter, validate(loginSchema), c.login)
+router.post('/google', authLimiter, validate(googleSchema), c.google)
 router.post('/refresh', validate(tokenSchema), c.refresh)
 router.post('/logout', validate(tokenSchema), c.logout)
 router.post('/logout-all', requireAuth, c.logoutAll)

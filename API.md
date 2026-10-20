@@ -22,6 +22,7 @@ Base URL (local): `http://localhost:3000/api/v1`
 |---|---|---|---|
 | POST | `/auth/register` | `{ email, password (8+), name?, incomeType? }` | `201 { user, accessToken, refreshToken }` |
 | POST | `/auth/login` | `{ email, password }` | `{ user, accessToken, refreshToken }` |
+| POST | `/auth/google` | `{ idToken }` | `{ user, isNewUser, accessToken, refreshToken }`. Sign up **or** log in with Google. |
 | POST | `/auth/refresh` | `{ refreshToken }` | `{ accessToken, refreshToken }` |
 | POST | `/auth/logout` | `{ refreshToken }` | `204` |
 | POST | `/auth/logout-all` 🔒 | – | `204` (every device logged out) |
@@ -31,6 +32,19 @@ Base URL (local): `http://localhost:3000/api/v1`
 | POST | `/auth/reset-password` | `{ email, code, newPassword }` | `{ user, accessToken, refreshToken }`. Other devices are logged out. |
 
 `incomeType` is one of `STUDENT`, `SALARIED`, `FREELANCE`.
+
+Every `user` object also has `hasPassword` and `hasGoogle` (booleans). `passwordHash` and `googleId` are never sent.
+
+### Google sign-in
+
+- The app gets an **ID token** from Google (web: Google's "Sign in with Google" script; phone: the Google Sign-In SDK) and sends it to `POST /auth/google`.
+- The server checks it with Google: it must be signed by Google, not expired, made for one of `GOOGLE_CLIENT_IDS` (env, comma separated), and the Google email must be verified.
+- Who it logs in as:
+  - Google account seen before → that user.
+  - Email already has a Kust account → Google gets linked to it, and the email counts as verified. If that account had **never verified its email**, its password is removed and its sessions are ended, because whoever set that password never proved they own the inbox.
+  - Otherwise → a new user (email verified, no password). `isNewUser: true`.
+- Google-only users can't use the password login (they get the normal `BAD_CREDENTIALS`, with a hint to use Google). They can add a password with **forgot password**.
+- Errors: `GOOGLE_NOT_CONFIGURED` (503, no client ids set), `GOOGLE_TOKEN_INVALID` (401), `GOOGLE_EMAIL_NOT_VERIFIED` (401), `GOOGLE_ACCOUNT_MISMATCH` (409, that email is linked to a different Google account).
 
 ### Email verification (OTP)
 
@@ -51,8 +65,8 @@ Base URL (local): `http://localhost:3000/api/v1`
 |---|---|---|---|
 | GET | `/users/me` | – | `{ user }` |
 | PATCH | `/users/me` | `{ name?, incomeType? }` | `{ user }` |
-| POST | `/users/me/password` | `{ currentPassword, newPassword }` | `{ accessToken, refreshToken }`. Other devices are logged out. |
-| DELETE | `/users/me` | `{ password }` | `204`. Deletes the account and all its data. |
+| POST | `/users/me/password` | `{ currentPassword, newPassword }` | `{ accessToken, refreshToken }`. Other devices are logged out. `400 NO_PASSWORD` for Google-only accounts (use forgot password). |
+| DELETE | `/users/me` | `{ password? }` | `204`. Deletes the account and all its data. `password` is required if the account has one. |
 
 ## Formulas 🔒 ✉️ (verified email required)
 
@@ -110,7 +124,7 @@ A full budget looks like this:
 ## Limits
 
 - All of `/api/v1`: 300 requests per 15 minutes per IP.
-- Login, register, verify and reset: 10 failed attempts per 15 minutes per IP in production (100 in development).
+- Login, register, Google, verify and reset: 10 failed attempts per 15 minutes per IP in production (100 in development).
 - Sending codes (resend-verification, forgot-password): 5 per 15 minutes per IP in production.
 - Over a limit, the API returns `429 RATE_LIMITED`.
 
@@ -120,4 +134,4 @@ Make a user an admin with `npm run make-admin -- email@example.com`. They then n
 
 ## Common error codes
 
-`VALIDATION_ERROR`, `BAD_JSON`, `UNAUTHORIZED`, `TOKEN_INVALID`, `BAD_CREDENTIALS`, `EMAIL_TAKEN`, `REFRESH_INVALID`, `REFRESH_REUSED`, `REFRESH_EXPIRED`, `FORBIDDEN`, `FORMULA_NOT_FOUND`, `BUDGET_NOT_FOUND`, `EXPENSE_NOT_FOUND`, `BAD_SPLIT`, `BAD_ALLOCATION`, `FORMULA_IN_USE`, `EMAIL_NOT_VERIFIED`, `ALREADY_VERIFIED`, `OTP_INVALID`, `OTP_EXPIRED`, `OTP_TOO_MANY_ATTEMPTS`, `OTP_COOLDOWN`, `RATE_LIMITED`, `ROUTE_NOT_FOUND`, `INTERNAL_ERROR`
+`VALIDATION_ERROR`, `BAD_JSON`, `UNAUTHORIZED`, `TOKEN_INVALID`, `BAD_CREDENTIALS`, `NO_PASSWORD`, `GOOGLE_NOT_CONFIGURED`, `GOOGLE_TOKEN_INVALID`, `GOOGLE_EMAIL_NOT_VERIFIED`, `GOOGLE_ACCOUNT_MISMATCH`, `EMAIL_TAKEN`, `REFRESH_INVALID`, `REFRESH_REUSED`, `REFRESH_EXPIRED`, `FORBIDDEN`, `FORMULA_NOT_FOUND`, `BUDGET_NOT_FOUND`, `EXPENSE_NOT_FOUND`, `BAD_SPLIT`, `BAD_ALLOCATION`, `FORMULA_IN_USE`, `EMAIL_NOT_VERIFIED`, `ALREADY_VERIFIED`, `OTP_INVALID`, `OTP_EXPIRED`, `OTP_TOO_MANY_ATTEMPTS`, `OTP_COOLDOWN`, `RATE_LIMITED`, `ROUTE_NOT_FOUND`, `INTERNAL_ERROR`

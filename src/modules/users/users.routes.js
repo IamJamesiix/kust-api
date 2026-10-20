@@ -18,7 +18,8 @@ const passwordSchema = z.object({
   newPassword: passwordRule,
 })
 
-const deleteSchema = z.object({ password: z.string().min(1) })
+// password is required for accounts that have one (checked in the service)
+const deleteSchema = z.object({ password: z.string().min(1).optional() })
 
 router.get('/me', c.getMe)
 router.patch('/me', validate(updateSchema), c.updateMe)

@@ -21,6 +21,9 @@ export async function updateMe(userId, { name, incomeType }) {
 // New password = every device gets logged out, and this device gets fresh tokens.
 export async function changePassword(userId, { currentPassword, newPassword }) {
   const user = await getUserOrThrow(userId)
+  if (!user.passwordHash) {
+    throw new AppError(400, 'NO_PASSWORD', 'You sign in with Google. Use "Forgot password" to add a password.')
+  }
   if (!(await checkPassword(currentPassword, user.passwordHash))) {
     throw new AppError(401, 'BAD_CREDENTIALS', 'Current password is wrong')
   }
@@ -32,7 +35,8 @@ export async function changePassword(userId, { currentPassword, newPassword }) {
 
 export async function deleteMe(userId, { password }) {
   const user = await getUserOrThrow(userId)
-  if (!(await checkPassword(password, user.passwordHash))) {
+  // Google-only accounts have no password to confirm with; being logged in is the proof.
+  if (user.passwordHash && !(password && (await checkPassword(password, user.passwordHash)))) {
     throw new AppError(401, 'BAD_CREDENTIALS', 'Password is wrong')
   }
 

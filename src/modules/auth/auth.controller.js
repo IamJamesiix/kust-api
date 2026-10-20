@@ -8,6 +8,10 @@ export async function login(req, res) {
   res.json(await authService.login(req.body))
 }
 
+export async function google(req, res) {
+  res.json(await authService.googleLogin(req.body))
+}
+
 export async function refresh(req, res) {
   res.json(await authService.refresh(req.body))
 }

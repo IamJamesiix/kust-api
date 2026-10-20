@@ -12,6 +12,13 @@ const schema = z.object({
   // Email (Resend). Without a key, codes are printed in the terminal instead (dev only).
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default('Kust <onboarding@resend.dev>'),
+
+  // Google sign-in: the OAuth client ids from Google Cloud, comma separated
+  // (web now; Android/iOS later). Empty = Google sign-in switched off.
+  GOOGLE_CLIENT_IDS: z
+    .string()
+    .default('')
+    .transform((s) => s.split(',').map((id) => id.trim()).filter(Boolean)),
 })
 
 const parsed = schema.safeParse(process.env)
