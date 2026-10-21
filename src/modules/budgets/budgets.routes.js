@@ -15,7 +15,11 @@ const splitSchema = z.object({
 
 const createSchema = splitSchema.extend({
   periodStart: z.coerce.date().optional(),
+  // where the money came from ("balance" = splitting what you already have)
+  source: z.enum(['allowance', 'salary', 'client', 'sales', 'gift', 'other', 'balance']).optional(),
 })
+
+const movedSchema = z.object({ moved: z.boolean() })
 
 router.post('/preview', validate(splitSchema), c.preview)
 router.post('/', validate(createSchema), c.create)
@@ -23,6 +27,7 @@ router.get('/', c.list)
 router.get('/current', c.current) // must come before /:id, or "current" is read as an id
 router.get('/:id', c.getOne)
 router.delete('/:id', c.remove)
+router.patch('/:id/allocations/:allocationId', validate(movedSchema), c.setMoved)
 
 // Expenses inside a budget
 router.post('/:id/expenses', validate(createExpenseSchema), expenses.create)

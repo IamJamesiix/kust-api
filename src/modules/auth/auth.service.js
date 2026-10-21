@@ -3,7 +3,7 @@ import { AppError } from '../../utils/AppError.js'
 import { hashPassword, checkPassword, publicUser } from '../../utils/password.js'
 import { issueTokens, revokeAllTokens, sha256 } from './tokens.js'
 import { sendCode, useCode } from './otp.js'
-import { verifyGoogleIdToken, decideGoogleAccount } from './google.js'
+import { verifyGoogleIdToken, exchangeGoogleCode, decideGoogleAccount } from './google.js'
 
 export async function register({ email, password, name, incomeType }) {
   const existing = await prisma.user.findUnique({ where: { email } })
@@ -66,9 +66,12 @@ export async function logoutAll(userId) {
 
 // ---------------------------------------------------------------- Google sign-in
 
-// One endpoint for both sign up and log in. `verify` can be swapped in tests.
-export async function googleLogin({ idToken }, { verify = verifyGoogleIdToken } = {}) {
-  const google = await verify(idToken)
+// One endpoint for both sign up and log in.
+// Phones send { idToken }; the web app sends { code }, which we swap for an ID token.
+// `verify` and `exchange` can be swapped in tests.
+export async function googleLogin({ idToken, code }, { verify = verifyGoogleIdToken, exchange = exchangeGoogleCode } = {}) {
+  const token = code ? await exchange(code) : idToken
+  const google = await verify(token)
 
   const [byGoogle, byEmail] = await Promise.all([
     prisma.user.findUnique({ where: { googleId: google.googleId } }),

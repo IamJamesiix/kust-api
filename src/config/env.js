@@ -13,12 +13,17 @@ const schema = z.object({
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default('Kust <onboarding@resend.dev>'),
 
-  // Google sign-in: the OAuth client ids from Google Cloud, comma separated
-  // (web now; Android/iOS later). Empty = Google sign-in switched off.
+  // Google sign-in: the OAuth client ids from Google Cloud, comma separated.
+  // Put the WEB client id FIRST (Android/iOS ids after it, later).
+  // Empty = Google sign-in switched off.
   GOOGLE_CLIENT_IDS: z
     .string()
     .default('')
     .transform((s) => s.split(',').map((id) => id.trim()).filter(Boolean)),
+  // The web client's secret. The web app sends a one-time code, and only the
+  // server (with this secret) can swap it for the person's ID token. Never put
+  // this in the mobile app.
+  GOOGLE_WEB_CLIENT_SECRET: z.string().optional(),
 })
 
 const parsed = schema.safeParse(process.env)

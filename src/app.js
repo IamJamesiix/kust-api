@@ -9,6 +9,7 @@ import userRoutes from './modules/users/users.routes.js'
 import formulaRoutes from './modules/formulas/formulas.routes.js'
 import budgetRoutes from './modules/budgets/budgets.routes.js'
 import expenseRoutes from './modules/expenses/expenses.routes.js'
+import reviewRoutes from './modules/reviews/reviews.routes.js'
 import { requireAuth, requireVerified } from './middleware/requireAuth.js'
 import { apiLimiter } from './middleware/rateLimit.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
@@ -42,6 +43,7 @@ v1.use('/users', requireAuth, userRoutes)
 v1.use('/formulas', requireAuth, requireVerified, formulaRoutes)
 v1.use('/budgets', requireAuth, requireVerified, budgetRoutes)
 v1.use('/expenses', requireAuth, requireVerified, expenseRoutes)
+v1.use('/reviews', requireAuth, requireVerified, reviewRoutes)
 app.use('/api/v1', v1)
 
 app.use(notFound)

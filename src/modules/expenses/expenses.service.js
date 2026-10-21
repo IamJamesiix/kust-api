@@ -15,12 +15,12 @@ async function getOwnedExpense(userId, expenseId) {
   return expense
 }
 
-export async function create(userId, budgetId, { allocationId, amountKobo, note, spentAt }) {
+export async function create(userId, budgetId, { allocationId, amountKobo, note, category, spentAt }) {
   const budget = await getBudget(userId, budgetId)
   assertBucket(budget, allocationId)
 
   return prisma.expense.create({
-    data: { userId, budgetId: budget.id, allocationId, amountKobo: BigInt(amountKobo), note, spentAt },
+    data: { userId, budgetId: budget.id, allocationId, amountKobo: BigInt(amountKobo), note, category, spentAt },
   })
 }
 

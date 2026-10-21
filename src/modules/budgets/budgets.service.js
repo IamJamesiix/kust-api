@@ -18,6 +18,18 @@ async function spentMap(budgetId) {
   return new Map(rows.map((r) => [r.allocationId, r._sum.amountKobo ?? 0n]))
 }
 
+// Use the person's own bucket names and "lives in" places (from "Name your buckets").
+// A rename only applies to the bucket it was made on: baseLabel must match.
+async function applyPlaces(userId, parts) {
+  const places = await prisma.bucketPlace.findMany({ where: { userId } })
+  const byKey = new Map(places.map((p) => [p.colorKey, p]))
+  return parts.map((part) => {
+    const place = byKey.get(part.colorKey)
+    const rename = place?.label && (!place.baseLabel || place.baseLabel === part.label)
+    return { ...part, label: rename ? place.label : part.label, livesIn: place?.livesIn ?? null }
+  })
+}
+
 async function withSummary(budget) {
   return summarize(budget, await spentMap(budget.id))
 }
@@ -36,11 +48,11 @@ export async function preview(userId, { formulaId, incomeKobo }) {
   return {
     formula: { id: formula.id, name: formula.name },
     incomeKobo: BigInt(incomeKobo),
-    allocations: splitIncome(BigInt(incomeKobo), formula.buckets),
+    allocations: await applyPlaces(userId, splitIncome(BigInt(incomeKobo), formula.buckets)),
   }
 }
 
-export async function create(userId, { formulaId, incomeKobo, periodStart }, idempotencyKey) {
+export async function create(userId, { formulaId, incomeKobo, periodStart, source }, idempotencyKey) {
   // Phone retried after a network drop? Hand back the budget we already made.
   if (idempotencyKey) {
     const existing = await prisma.budget.findUnique({
@@ -59,8 +71,9 @@ export async function create(userId, { formulaId, incomeKobo, periodStart }, ide
       formulaId: formula.id,
       incomeKobo: income,
       periodStart,
+      source,
       idempotencyKey,
-      allocations: { create: splitIncome(income, formula.buckets) },
+      allocations: { create: await applyPlaces(userId, splitIncome(income, formula.buckets)) },
     },
     include,
   })
@@ -110,6 +123,16 @@ export async function current(userId) {
     orderBy: [{ periodStart: 'desc' }, { createdAt: 'desc' }],
   })
   return budget ? withSummary(budget) : null
+}
+
+// "Move the money" checklist: tick (or untick) one bucket.
+export async function setMoved(userId, budgetId, allocationId, moved) {
+  const budget = await getOwned(userId, budgetId)
+  if (!budget.allocations.some((a) => a.id === allocationId)) {
+    throw new AppError(400, 'BAD_ALLOCATION', "That bucket isn't part of this budget")
+  }
+  await prisma.allocation.update({ where: { id: allocationId }, data: { movedAt: moved ? new Date() : null } })
+  return getOne(userId, budgetId)
 }
 
 export async function remove(userId, id) {

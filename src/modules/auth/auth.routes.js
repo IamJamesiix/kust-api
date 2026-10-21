@@ -23,8 +23,13 @@ const tokenSchema = z.object({ refreshToken: z.string().min(1) })
 const verifySchema = z.object({ code })
 const forgotSchema = z.object({ email })
 const resetSchema = z.object({ email, code, newPassword: passwordRule })
-// Google ID tokens are JWTs, normally ~1-2 KB.
-const googleSchema = z.object({ idToken: z.string().min(20).max(4096) })
+// Phones send an ID token (a JWT, ~1-2 KB); the web app sends a one-time code.
+const googleSchema = z
+  .object({
+    idToken: z.string().min(20).max(4096).optional(),
+    code: z.string().min(10).max(2048).optional(),
+  })
+  .refine((d) => Boolean(d.idToken) !== Boolean(d.code), 'Send either idToken or code')
 
 router.post('/register', authLimiter, validate(registerSchema), c.register)
 router.post('/login', authLimiter, validate(loginSchema), c.login)

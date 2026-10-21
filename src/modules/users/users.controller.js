@@ -8,6 +8,14 @@ export async function updateMe(req, res) {
   res.json({ user: await usersService.updateMe(req.user.id, req.body) })
 }
 
+export async function getPlaces(req, res) {
+  res.json({ buckets: await usersService.getPlaces(req.user.id) })
+}
+
+export async function savePlaces(req, res) {
+  res.json({ buckets: await usersService.savePlaces(req.user.id, req.body.buckets) })
+}
+
 export async function changePassword(req, res) {
   res.json(await usersService.changePassword(req.user.id, req.body))
 }

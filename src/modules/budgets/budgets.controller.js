@@ -32,3 +32,9 @@ export async function remove(req, res) {
   await budgetsService.remove(req.user.id, req.params.id)
   res.status(204).end()
 }
+
+export async function setMoved(req, res) {
+  res.json({
+    budget: await budgetsService.setMoved(req.user.id, req.params.id, req.params.allocationId, req.body.moved),
+  })
+}

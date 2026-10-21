@@ -21,4 +21,6 @@ services:
       - key: EMAIL_FROM
         sync: false
       - key: GOOGLE_CLIENT_IDS
-        sync: false # Google Cloud OAuth client id(s), comma separated
+        sync: false # Google Cloud OAuth client id(s), comma separated, web client first
+      - key: GOOGLE_WEB_CLIENT_SECRET
+        sync: false # the web client's secret (server only)

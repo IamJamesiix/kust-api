@@ -26,6 +26,13 @@ enum IncomeType {
   FREELANCE
 }
 
+// "What's your main goal right now?" (onboarding)
+enum Goal {
+  STOP_RUNNING_OUT
+  SAVE_FOR_SOMETHING
+  BUILD_CUSHION
+}
+
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
@@ -42,8 +49,37 @@ model User {
   formulas      Formula[]
   refreshTokens RefreshToken[]
   otpCodes      OtpCode[]
+  bucketPlaces  BucketPlace[]
+
+  // Onboarding answers (the "name + 4 questions" pages)
+  onboardedAt    DateTime? // null = still has to do onboarding
+  moneySource    String? // allowance | salary | clients | business | mixed
+  nextMoneyAt    DateTime? // when the next money is expected: powers "₦X a day until..."
+  unavoidablePct Int? // 20..90: % of money that goes to things they can't avoid
+  goal           Goal?
+
+  // Settings (Profile page)
+  remindersOn   Boolean @default(true)
+  handwritingOn Boolean @default(true) // words write themselves in
+  shareAmounts  Boolean @default(false) // may share cards show naira amounts?
+
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+}
+
+// What a person calls each kind of bucket and where its money lives
+// ("Needs" lives in "My main bank"). One row per colorKey (needs, wants, savings, invest).
+model BucketPlace {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  colorKey  String
+  baseLabel String? // the formula's name for it ("Needs"), so a rename only applies to that bucket
+  label     String? // their name for it ("Bills")
+  livesIn   String? // "My main bank", "My savings app"
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, colorKey])
 }
 
 model RefreshToken {
@@ -107,6 +143,7 @@ model Budget {
   formula        Formula      @relation(fields: [formulaId], references: [id])
   incomeKobo     BigInt
   periodStart    DateTime     @default(now())
+  source         String? // where the money came from: allowance | salary | client | sales | gift | other | balance
   idempotencyKey String?
   allocations    Allocation[]
   expenses       Expense[]
@@ -125,6 +162,8 @@ model Allocation {
   percent    Int
   amountKobo BigInt
   position   Int
+  livesIn    String? // copied from BucketPlace when the budget is made
+  movedAt    DateTime? // ticked on the "Move the money" checklist
   expenses   Expense[]
 
   @@index([budgetId])
@@ -141,6 +180,7 @@ model Expense {
   allocation   Allocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
   amountKobo   BigInt
   note         String?
+  category     String? // food | transport | data | eating_out | other
   spentAt      DateTime   @default(now())
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt

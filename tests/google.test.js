@@ -46,3 +46,15 @@ test('publicUser hides passwordHash and googleId, adds flags', () => {
   assert.equal(out.hasGoogle, true)
   assert.equal(publicUser({ id: 'u2', passwordHash: null, googleId: null }).hasPassword, false)
 })
+
+test('google route accepts exactly one of idToken / code', async () => {
+  const { z } = await import('zod')
+  // Same rule as auth.routes.js
+  const schema = z
+    .object({ idToken: z.string().min(20).max(4096).optional(), code: z.string().min(10).max(2048).optional() })
+    .refine((d) => Boolean(d.idToken) !== Boolean(d.code))
+  assert.equal(schema.safeParse({ code: '4/0AbCdEfGhIjK' }).success, true)
+  assert.equal(schema.safeParse({ idToken: 'x'.repeat(30) }).success, true)
+  assert.equal(schema.safeParse({}).success, false)
+  assert.equal(schema.safeParse({ code: '4/0AbCdEfGhIjK', idToken: 'x'.repeat(30) }).success, false)
+})

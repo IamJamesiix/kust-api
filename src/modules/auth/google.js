@@ -4,6 +4,24 @@ import { AppError } from '../../utils/AppError.js'
 
 const client = new OAuth2Client()
 
+// Web sign-in sends a one-time CODE (from Google's popup) instead of an ID
+// token. We swap it with Google for the person's ID token, using the web
+// client's secret. 'postmessage' is the redirect value Google uses for popups.
+export async function exchangeGoogleCode(code) {
+  const webClientId = env.GOOGLE_CLIENT_IDS[0]
+  if (!webClientId || !env.GOOGLE_WEB_CLIENT_SECRET) {
+    throw new AppError(503, 'GOOGLE_NOT_CONFIGURED', 'Google sign-in is not set up yet')
+  }
+  try {
+    const oauth = new OAuth2Client(webClientId, env.GOOGLE_WEB_CLIENT_SECRET, 'postmessage')
+    const { tokens } = await oauth.getToken(code)
+    if (!tokens.id_token) throw new Error('no id_token')
+    return tokens.id_token
+  } catch {
+    throw new AppError(401, 'GOOGLE_CODE_INVALID', 'Google sign-in failed. Please try again.')
+  }
+}
+
 // The app gets an ID token from Google and sends it here. We ask Google's
 // library to check it: signed by Google, not expired, and made for one of OUR
 // client ids (the "audience"). Then we read who it is.
