@@ -12,7 +12,8 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "make-admin": "tsx scripts/make-admin.js"
+    "make-admin": "tsx scripts/make-admin.js",
+    "reset-users": "tsx scripts/reset-users.js"
   },
   "keywords": [],
   "author": "",
