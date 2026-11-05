@@ -13,7 +13,8 @@
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "make-admin": "tsx scripts/make-admin.js",
-    "reset-users": "tsx scripts/reset-users.js"
+    "reset-users": "tsx scripts/reset-users.js",
+    "email:test": "tsx scripts/email-test.js"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +33,7 @@
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.12.1",
+    "nodemailer": "^10.3.1",
     "pg": "^8.23.1",
     "prisma": "^7.10.0",
     "tsx": "^4.23.15",

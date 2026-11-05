@@ -1,6 +1,9 @@
 import 'dotenv/config'
 import { z } from 'zod'
 
+// Empty strings in .env count as not set
+const optional = z.preprocess((v) => v || undefined, z.string().optional())
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(3000),
@@ -9,9 +12,15 @@ const schema = z.object({
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_DAYS: z.coerce.number().int().positive().default(30),
 
-  // Email (Resend). Without a key, codes are printed in the terminal instead (dev only).
-  RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().default('Kust <onboarding@resend.dev>'),
+  // Email. EMAIL_PROVIDER = gmail | resend | log (print in the terminal).
+  // Left empty: resend if RESEND_API_KEY is set, otherwise log.
+  EMAIL_PROVIDER: z.preprocess((v) => v || undefined, z.enum(['gmail', 'resend', 'log']).optional()),
+  EMAIL_FROM: z.preprocess((v) => v || undefined, z.string().default('Kust <onboarding@resend.dev>')),
+  RESEND_API_KEY: optional,
+  // Gmail API (the mailer OAuth client + a refresh token for the Kust Gmail account)
+  GMAIL_CLIENT_ID: optional,
+  GMAIL_CLIENT_SECRET: optional,
+  GMAIL_REFRESH_TOKEN: optional,
 
   // Google sign-in: the OAuth client ids from Google Cloud, comma separated.
   // Put the WEB client id FIRST (Android/iOS ids after it, later).
@@ -36,9 +45,29 @@ if (!parsed.success) {
   process.exit(1)
 }
 
-if (parsed.data.NODE_ENV === 'production' && !parsed.data.RESEND_API_KEY) {
-  console.error('RESEND_API_KEY is required in production (users need their codes)')
+const data = parsed.data
+data.EMAIL_PROVIDER ??= data.RESEND_API_KEY ? 'resend' : 'log'
+
+// Fail at startup, not when the first user signs up
+const emailProblems = []
+if (data.EMAIL_PROVIDER === 'gmail') {
+  for (const key of ['GMAIL_CLIENT_ID', 'GMAIL_CLIENT_SECRET', 'GMAIL_REFRESH_TOKEN']) {
+    if (!data[key]) emailProblems.push(`${key} is required when EMAIL_PROVIDER=gmail`)
+  }
+  if (!/@gmail\.com>?\s*$/i.test(data.EMAIL_FROM)) {
+    emailProblems.push('EMAIL_FROM must be the Kust Gmail address, e.g. Kust <kust.budget.app@gmail.com>')
+  }
+}
+if (data.EMAIL_PROVIDER === 'resend' && !data.RESEND_API_KEY) {
+  emailProblems.push('RESEND_API_KEY is required when EMAIL_PROVIDER=resend')
+}
+if (data.NODE_ENV === 'production' && data.EMAIL_PROVIDER === 'log') {
+  emailProblems.push('EMAIL_PROVIDER=log only prints codes; production needs gmail or resend (users need their codes)')
+}
+if (emailProblems.length) {
+  console.error('Email settings problem:')
+  for (const p of emailProblems) console.error(`  ${p}`)
   process.exit(1)
 }
 
-export const env = parsed.data
+export const env = data

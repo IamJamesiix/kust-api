@@ -1,3 +1,7 @@
 node_modules
 .env
 src/generated
+# any other env file (.env.old, .env.local…) holds secrets too
+.env.*
+!.env.example
+dist

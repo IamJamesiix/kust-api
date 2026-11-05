@@ -16,10 +16,18 @@ services:
         generateValue: true # Render makes a strong random secret
       - key: DATABASE_URL
         sync: false # you paste it in the dashboard
-      - key: RESEND_API_KEY
-        sync: false
+      - key: EMAIL_PROVIDER
+        sync: false # set by hand: gmail (once the GMAIL vars are in), later resend
       - key: EMAIL_FROM
-        sync: false
+        sync: false # Kust <the Kust Gmail address>
+      - key: GMAIL_CLIENT_ID
+        sync: false # kust-mailer project's OAuth client id
+      - key: GMAIL_CLIENT_SECRET
+        sync: false # secret: Render only, never in git
+      - key: GMAIL_REFRESH_TOKEN
+        sync: false # secret: from the OAuth Playground
+      - key: RESEND_API_KEY
+        sync: false # for later
       - key: GOOGLE_CLIENT_IDS
         sync: false # Google Cloud OAuth client id(s), comma separated, web client first
       - key: GOOGLE_WEB_CLIENT_SECRET
