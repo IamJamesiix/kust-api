@@ -2,9 +2,11 @@
 // a page from the Kust app: cream ruled paper on a desk, ink border with a hard
 // ink shadow, margin line, handwriting, one highlighter swipe behind the code.
 //
-// Email rules: tables + inline styles (Gmail/Outlook), no JavaScript, only the
-// hosted logo PNG. Caveat + Patrick Hand load in Apple Mail / iOS Mail; Gmail
-// ignores web fonts and falls back to the handwriting-ish stacks below.
+// Email rules: tables + inline styles (Gmail/Outlook), no JavaScript, no web
+// fonts (Caveat/Patrick Hand show if the reader has them; otherwise Bradley Hand
+// on Apple devices, Segoe Print on Windows), only the hosted logo PNG.
+// "light dark" tells Apple Mail we've handled dark mode, so it keeps the cream
+// paper instead of recolouring it, the same notebook as the app.
 // Everything sits on the app's 32px line grid so text lands on the rules.
 
 const C = {
@@ -19,7 +21,6 @@ const C = {
 }
 const HAND = "'Caveat','Bradley Hand','Segoe Print','Comic Sans MS',cursive"
 const BODY = "'Patrick Hand','Segoe Print','Bradley Hand','Comic Sans MS','Trebuchet MS',sans-serif"
-const FONTS = 'https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Patrick+Hand&display=swap'
 const LOGO = 'https://kust.onrender.com/icon-192.png'
 const SITE = 'https://kust.onrender.com'
 
@@ -74,12 +75,11 @@ export function codeEmailParts({ code, purpose }) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light">
-<meta name="supported-color-schemes" content="light">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
 <title>${esc(t.title)}</title>
-<link href="${FONTS}" rel="stylesheet">
 <style>
-  :root { color-scheme: light; }
+  :root { color-scheme: light dark; }
   @media (max-width:420px) {
     .k-pad { padding-left:48px !important; padding-right:16px !important; }
     .k-title { font-size:38px !important; }
