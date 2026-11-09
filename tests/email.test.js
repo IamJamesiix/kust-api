@@ -104,3 +104,35 @@ test('gmail: a revoked refresh token is called out as invalid_grant', async () =
   assert.match(logs, /invalid_grant: the Gmail refresh token was revoked or has expired/)
   assert.match(logs, /dev fallback/) // in dev, the code is still printed so you can keep testing
 })
+
+test('code email HTML: big code on the highlighter, no scripts, no web fonts, no sign-in links', () => {
+  for (const purpose of ['VERIFY_EMAIL', 'RESET_PASSWORD']) {
+    const { html, text } = codeEmail({ code: '482913', purpose })
+    // the code is real text, unspaced (spacing is CSS letter-spacing), so copying gives 6 digits
+    assert.match(html, />482913</)
+    assert.match(html, /letter-spacing:\d+px/)
+    assert.match(text, /482913/)
+    assert.match(text, /10 minutes/)
+    assert.match(html, /<html lang="en"/)
+    assert.match(html, /<meta name="color-scheme" content="light dark">/)
+    assert.match(html, /alt="Kust"/)
+    assert.doesNotMatch(html, /<script|<form|<iframe|javascript:/i)
+    assert.doesNotMatch(html, /@import|@font-face|fonts\.googleapis|<link/i) // no external fonts needed
+    assert.doesNotMatch(html, /url\(/) // no background images
+    const links = [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1])
+    assert.deepEqual(links, ['https://kust.onrender.com']) // only the plain footer link
+    assert.ok(Buffer.byteLength(html) < 20 * 1024, 'HTML stays under 20 KB')
+  }
+})
+
+test('code emails: welcome vs. calm reset wording, text part complete on its own', () => {
+  const verify = codeEmail({ code: '482913', purpose: 'VERIFY_EMAIL' })
+  const reset = codeEmail({ code: '482913', purpose: 'RESET_PASSWORD' })
+  assert.match(verify.html, /Welcome to Kust!/)
+  assert.match(verify.text, /finish signing up/)
+  assert.match(reset.html, /Reset your password/)
+  assert.match(reset.text, /Your password stays the same/)
+  assert.match(reset.html, /#B42318/) // red pen only on the reset email
+  assert.doesNotMatch(verify.html, /#B42318/)
+  for (const e of [verify, reset]) assert.match(e.text, /Kust · every naira, a plan\./)
+})

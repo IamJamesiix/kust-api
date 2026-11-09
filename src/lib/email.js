@@ -114,22 +114,6 @@ export function sendEmail(message) {
   return mailer(message)
 }
 
-export function codeEmail({ code, purpose }) {
-  const title = purpose === 'VERIFY_EMAIL' ? 'Verify your email' : 'Reset your password'
-  const intro =
-    purpose === 'VERIFY_EMAIL'
-      ? 'Welcome to Kust! Enter this code in the app to verify your email:'
-      : 'Someone asked to reset your Kust password. If it was you, enter this code in the app:'
-
-  return {
-    subject: `Your Kust code: ${code}`,
-    text: `${intro} ${code}. It expires in 10 minutes. If you didn't ask for this, you can ignore this email.`,
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:420px;margin:auto;padding:24px">
-        <h2 style="margin:0 0 12px">${title}</h2>
-        <p style="color:#444">${intro}</p>
-        <p style="font-size:32px;font-weight:bold;letter-spacing:8px;margin:20px 0">${code}</p>
-        <p style="color:#888;font-size:13px">This code expires in 10 minutes. If you didn't ask for it, you can ignore this email.</p>
-      </div>`,
-  }
-}
+// The 6-digit code email (verify email / reset password). The notebook-look design
+// lives in code-email.js; this keeps the same name, inputs and { subject, text, html } output.
+export { codeEmailParts as codeEmail } from './code-email.js'
