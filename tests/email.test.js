@@ -115,7 +115,7 @@ test('code email HTML: big code on the highlighter, no scripts, no web fonts, no
     assert.match(text, /10 minutes/)
     assert.match(html, /<html lang="en"/)
     assert.match(html, /<meta name="color-scheme" content="light dark">/)
-    assert.match(html, /alt="Kust"/)
+    assert.match(html, /alt=""/)
     assert.doesNotMatch(html, /<script|<form|<iframe|javascript:/i)
     assert.doesNotMatch(html, /@import|@font-face|fonts\.googleapis|<link/i) // no external fonts needed
     assert.doesNotMatch(html, /url\(/) // no background images
