@@ -29,10 +29,18 @@ app.use(cors())
 app.use(express.json({ limit: '100kb' }))
 if (env.NODE_ENV !== 'test') app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
-app.get('/health', async (req, res) => {
+// Render checks this every few seconds, so it must NOT touch the database
+// (every database query counts against the free plan's monthly limit).
+app.get('/health', (req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() })
+})
+
+// Full check including the database. For occasional manual use only.
+app.get('/health/db', async (req, res) => {
   await prisma.$queryRaw`SELECT 1`
   res.json({ ok: true, db: 'up', time: new Date().toISOString() })
 })
+
 
 // Versioned from day one — old app builds stay on people's phones for months.
 const v1 = express.Router()
